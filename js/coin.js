@@ -1063,6 +1063,7 @@
 				var utxo_txid = self.ins[i].outpoint.hash;
 				var utxo_index = self.ins[i].outpoint.index;
 				var utxo_address = self.extractAddress(i);
+
 				$.ajax ({
 					type: "GET",
 					cache: false,
@@ -1091,6 +1092,44 @@
 				});
 			}
 		}
+
+
+		r.getInputValuesOffline = function() {
+			var self = this;
+
+			var file = $('#signOfflineFile')[0];
+
+			if (!Boolean(file._data)) {
+				throw 'Select file';
+				return;
+			}
+
+			var blockdozer = file._data || {};
+
+			for (var i = 0; i < self.ins.length; i++) {
+				var utxo_txid = self.ins[i].outpoint.hash;
+				var utxo_index = self.ins[i].outpoint.index;
+				var utxo_address = self.extractAddress(i);
+
+				var data = blockdozer[utxo_address];
+
+				if(data[0] == undefined) {
+					alert('Can not retreive input values for Bitcoin Cash signatures.');
+				}
+				if((data[0].address && data[0].txid) && data[0].address==utxo_address) {
+					for(var j in data) {
+						if (utxo_txid == data[j].txid
+						&& utxo_index == data[j].vout) {
+							self.ins[j].value = new BigInteger('' + Math.round((data[j].amount*1) * 1e8), 10);
+						}
+					}
+				} else {
+					alert('Can not retreive input values for Bitcoin Cash signatures.');
+				}
+			}
+		}
+
+
 
 		/* extract the scriptSig, used in the transactionHash() function */
 		r.extractScriptKey = function(index) {
@@ -1148,7 +1187,9 @@
 			}
 
 			var host = $("#coinjs_broadcast option:selected").val();
-			var isBitcoinCash = (host == 'blockdozer.com_bitcoincash')
+			var isBitcoinCash = (host == 'blockdozer.com_bitcoincash');
+
+			var isOffline = $('#signOfflineFlag').prop('checked');
 
 			var shType = sigHashType || 1;
 
@@ -1157,10 +1198,11 @@
 				shType = shType | 0x40;
 				for (var i = 0; i < this.ins.length; i++) {
 					if (this.ins[i].value == undefined) {
-						this.getInputValues()
+						(isOffline) ? this.getInputValuesOffline() : this.getInputValues();
 					}
 				}
 			}
+
 
 			var hash = Crypto.util.hexToBytes(this.transactionHash(index, shType));
 

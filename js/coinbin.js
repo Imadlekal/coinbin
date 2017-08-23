@@ -1573,6 +1573,17 @@ $(document).ready(function() {
 			$(script).parent().addClass('has-error');
 		}
 
+
+		if($('#signOfflineFlag').prop('checked') && !$('#signOfflineFile')[0]._data) {
+			$('#signOfflineFlag').parent().parent().addClass('has-error');
+			$('#signOfflineOptionsError').show();
+		}
+		else {
+			$('#signOfflineFlag').parent().parent().removeClass('has-error');
+			$('#signOfflineOptionsError').hide();
+		}
+
+
 		if($("#sign .has-error").length==0){
 			$("#signedDataError").addClass('hidden');
 			try {
@@ -1605,6 +1616,122 @@ $(document).ready(function() {
 			$("#signAdvanced").addClass("hidden");
 		}
 	});
+
+
+	$('#signOfflineFlag').click(function() {
+		var isBitcoinCash = ($("#coinjs_broadcast option:selected").val() == 'blockdozer.com_bitcoincash')
+
+		if (this.checked && !isBitcoinCash) {
+			this.checked = false;
+			alert('Offline Processing of UTXO may be used for the Bitcoin Cash only. Change Network in Broadcast settings.');
+			return;
+		}
+
+		var optionsBlock = $('#signOfflineOptions');
+		(this.checked) ? optionsBlock.show() : optionsBlock.hide();
+	});
+
+
+	$('#signOfflineFile').change(function() {
+		this._data = undefined;
+
+		if (!this.files.length) {
+			$('#signOfflineOptionsInfo').show();
+			return;
+		}
+
+		var file = this;
+
+		var reader = new FileReader();
+
+		reader.onload = function() {
+			try {
+				file._data = JSON.parse(reader.result);
+				$('#signOfflineOptionsInfo').hide();
+			}
+			catch(error) {
+				$('signOfflineOptionsError').show();
+			}
+		}
+
+		reader.readAsText(this.files[0]);
+	})
+
+
+	$('#signOfflineSaveToFile').click(function(e) {
+		var thisbtn = $('#signOfflineSaveToFile');
+
+		var addresses = $('#signOfflineCreateFile textarea').val()
+			.split('\n')
+
+			.map(function(x) {
+				return x.replace(/^\s+|\s+$/gm, '');
+			})
+
+			.filter(function(x) {
+				return x && x.length > 0;
+			});
+
+
+		if (!addresses.length) {
+			alert('Please fill addresses');
+			return;
+		}
+
+		$(thisbtn).attr('disabled', true);
+		$('span[label]', thisbtn).html('Please wait, loading..');
+
+
+		var result = {};
+
+		function next() {
+			if (!addresses.length) {
+				if (Object.keys(result).length) {
+					var blob = new Blob([JSON.stringify(result, null, 2)]);
+					saveAs(blob, 'blockdozer_data.json');
+				}
+				else {
+					alert('File is empty..');
+				}
+
+				$(thisbtn).attr('disabled', false);
+				$('span[label]', thisbtn).html('Save As');
+
+				return;
+			}
+
+			var utxo_address = addresses.shift();
+
+			$.ajax({
+				type: "GET",
+				cache: false,
+				async: true,
+				url: "http://blockdozer.com/insight-api/addr/"+utxo_address+"/utxo",
+				dataType: "json",
+				error: function(data) {
+					alert('Can not retreive input values for Bitcoin Cash signatures.');
+					next();
+				},
+				success: function(data) {
+					if(data[0] == undefined) {
+						alert('Can not retreive input values for Bitcoin Cash signatures.');
+					}
+
+					if((data[0].address && data[0].txid) && data[0].address==utxo_address) {
+						result[utxo_address] = data;
+					} else {
+						alert('Can not retreive input values for Bitcoin Cash signatures.');
+					}
+
+					next();
+				}
+			});
+		}
+
+		next();
+	});
+
+
 
 	/* page load code */
 

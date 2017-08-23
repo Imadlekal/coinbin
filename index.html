@@ -39,6 +39,7 @@
 		<script type="text/javascript" src="js/coinbin.js"></script>
 
 		<script type="text/javascript" src="js/bin2hex-patch.js"></script>
+		<script type="text/javascript" src="js/filesaver.js"></script>
 	</head>
 
 	<body>
@@ -937,7 +938,80 @@
 							<div class="alert alert-info" id="sighashTypeInfo">
 								SIGHASH_ALL: The default, signs all the inputs and outputs, protecting everything except the signature scripts against modification.
 							</div>
+
+							<br>
+
+							<div class="row" id="signOffline">
+								<div class="col-md-12">
+									<label for="">Offline Options (Bitcoin Cash Only)</label>
+
+									<br>
+
+									<p class="checkbox">
+										<label>
+											<input type="checkbox" id="signOfflineFlag" />
+											Use Offline Processing
+										</label>
+									</p>
+
+									<div class="jumbotron" id="signOfflineOptions" style="display: none;">
+										<div class="row">
+											<div class="col-md-10">
+												<input type="file" id="signOfflineFile" />
+											</div>
+
+											<div class="col-md-2">
+												<a href="javascript:;" data-toggle="collapse" data-target="#signOfflineCreateFile" aria-expanded="false" aria-controls="signOfflineCreateFile">
+													Create New File
+												</a>
+											</div>
+										</div>
+
+										<br>
+
+										<div class="alert alert-info" id="signOfflineOptionsInfo">
+											Select file with data from Blockdozer for offline processing
+										</div>
+
+										<br>
+
+										<div class="collapse" id="signOfflineCreateFile">
+											Create new file (UTXO will be fetched from Blockdozer):
+
+											<div class="row">
+												<div class="col-md-12">
+													<textarea class="form-control script" style="height: 125px; font-family: monospace;" placeholder="Insert one address per line"></textarea>
+												</div>
+											</div>
+
+											<br>
+
+											<div class="row"> 
+												<div class="col-md-3">
+													<button id="signOfflineSaveToFile" class="btn btn-success">
+														<span class="glyphicon glyphicon-save-file"></span>
+														<span label>Save As</span>
+													</button>
+												</div>
+											</div>
+
+										</div>
+
+										<br>
+
+										<div class="alert alert-danger" id="signOfflineOptionsError" style="display: none;">
+											File not selected or invalid data
+										</div>
+
+									</div>
+
+
+
+								</div>
+							</div>
 						</div>
+
+						<br>
 
 						<div class="alert alert-danger hidden" id="signedDataError">
 							<span class="glyphicon glyphicon-exclamation-sign"></span> There is a problem with one or more of your inputs, please check and try again
