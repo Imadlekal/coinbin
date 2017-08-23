@@ -7,9 +7,8 @@ $(document).ready(function() {
 
 	function bin2hex(s) {
 		return s.split('').reduce(function(res, c) {
-			var h = c.charCodeAt(0).toString(16);
-			if (h.length < 2) h = '0' + h;
-			return res + h;
+			var h = '0' + c.charCodeAt(0).toString(16);
+			return res + h.slice(-2);
 		}, '');
 	}
 
