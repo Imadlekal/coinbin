@@ -1780,7 +1780,7 @@ $(document).ready(function() {
 				url: createUTXOUrl(utxo_address),
 				dataType: "json",
 				error: function(data) {
-					alert('Can not retreive input values for Bitcoin Cash signatures.');
+					alert('Can not retreive input values for Bitcoin Cash signatures. ('+utxo_address+')');
 					next();
 				},
 				success: function(data) {
@@ -1788,7 +1788,7 @@ $(document).ready(function() {
 						result[utxo_address] = data;
 					} 
 					else {
-						alert('Can not retreive input values for Bitcoin Cash signatures.');
+						alert('Can not retreive input values for Bitcoin Cash signatures. ('+utxo_address+')');
 					}
 
 					next();
