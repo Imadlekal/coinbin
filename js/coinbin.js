@@ -716,6 +716,8 @@ $(document).ready(function() {
 			listUnspentCryptoidinfo_Carboncoin(redeem);
 		}  else if(host=='blockdozer.com_bitcoincash'){
 			listUnspentBlockdozer_bitcoincash(redeem);
+		}  else if(host=='blocktrail.com_bitcoincash'){
+			listUnspentBlocktrail_bitcoincash(redeem);
 		} else {
 			listUnspentDefault(redeem);
 		}
@@ -955,7 +957,6 @@ $(document).ready(function() {
 
 	/* retrieve unspent data from blockdozer.com (no https available) for bitcoin cash */
 	function listUnspentBlockdozer_bitcoincash(redeem) {
-
 		$.ajax ({
 			type: "GET",
 			cache: false,
@@ -979,6 +980,49 @@ $(document).ready(function() {
 							var n = o.vout;
 							var script = (redeem.isMultisig==true) ? $("#redeemFrom").val() : o.scriptPubKey;
 							var amount = o.amount;
+							addOutput(tx, n, script, amount);
+						}
+					}
+				} else {
+					$("#redeemFromStatus").removeClass('hidden').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Unexpected error, unable to retrieve unspent outputs.');
+				}
+			},
+			complete: function(data, status) {
+				$("#redeemFromBtn").html("Load").attr('disabled',false);
+				totalInputAmount();
+			}
+		});
+	}
+
+
+	/* retrieve unspent data from Blocktrail for Bitcoin Cash mainnet */
+	function listUnspentBlocktrail_bitcoincash(redeem) {
+		$.ajax ({
+			type: "GET",
+			cache: false,
+			url: "https://api.blocktrail.com/v1/bcc/address/"+redeem.addr+"/unspent-outputs?api_key=MY_APIKEY&limit=200",
+			dataType: "json",
+			error: function(data) {
+				$("#redeemFromStatus").removeClass('hidden').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Unexpected error, unable to retrieve unspent outputs!');
+			},
+			success: function(data) {
+				data = data.data;	// unwrap blocktrail top level 'data'
+				if(data[0] == undefined)
+				{
+					var json = '[{"address":"'+redeem.addr+'","hash":"[]"}]';
+					data = $.parseJSON(json);
+				}
+				if((data[0].address && data[0].hash) && data[0].address==redeem.addr){
+					$("#redeemFromAddress").removeClass('hidden').html('<span class="glyphicon glyphicon-info-sign"></span> Retrieved unspent inputs from address <a href="https://www.blocktrail.com/BCC/address/'+redeem.addr+'" target="_blank">'+redeem.addr+'</a>');
+
+					for(var i in data){
+						var o = data[i];
+						var tx = ((""+o.hash).match(/.{1,2}/g).reverse()).join("")+'';
+						if(tx.match(/^[a-f0-9]+$/)){
+							var n = o.index;
+							var script = (redeem.isMultisig==true) ? $("#redeemFrom").val() : o.script_hex;
+							var amount = o.value * 1e-8;
+
 							addOutput(tx, n, script, amount);
 						}
 					}
@@ -1619,11 +1663,12 @@ $(document).ready(function() {
 
 
 	$('#signOfflineFlag').click(function() {
-		var isBitcoinCash = ($("#coinjs_broadcast option:selected").val() == 'blockdozer.com_bitcoincash')
+		var host = $("#coinjs_utxo option:selected").val();
+		var isBitcoinCash = (host == 'blockdozer.com_bitcoincash' || host == 'blocktrail.com_bitcoincash');
 
 		if (this.checked && !isBitcoinCash) {
 			this.checked = false;
-			alert('Offline Processing of UTXO may be used for the Bitcoin Cash only. Change Network in Broadcast settings.');
+			alert('Offline Processing of UTXO may be used for the Bitcoin Cash mainnet only. Change Network in Broadcast settings.');
 			return;
 		}
 
@@ -1681,14 +1726,40 @@ $(document).ready(function() {
 		$(thisbtn).attr('disabled', true);
 		$('span[label]', thisbtn).html('Please wait, loading..');
 
-
 		var result = {};
+
+		var createUTXOUrl = null;
+		var validateApiData = null;
+	                                          
+		var host = $("#coinjs_utxo option:selected").val();
+                                                   
+		if (host == 'blockdozer.com_bitcoincash') {
+			createUTXOUrl = function(utxo_address) {
+				return "http://blockdozer.com/insight-api/addr/"+utxo_address+"/utxo";
+			}
+			
+			validateApiData = function(data, utxo_address) {
+				return (data[0] && data[0].address && data[0].txid) && data[0].address==utxo_address;
+			}
+		}
+
+		if (host == 'blocktrail.com_bitcoincash') {
+			createUTXOUrl = function(utxo_address) {
+				return "https://api.blocktrail.com/v1/bcc/address/"+utxo_address+"/unspent-outputs?api_key=MY_APIKEY&limit=200";
+			}
+			
+			validateApiData = function(data, utxo_address) {
+				data = data.data;	// unwrap blocktrail top level 'data'
+				return (data[0] && data[0].address && data[0].hash) && data[0].address == utxo_address;
+			}
+		}
+
 
 		function next() {
 			if (!addresses.length) {
 				if (Object.keys(result).length) {
 					var blob = new Blob([JSON.stringify(result, null, 2)]);
-					saveAs(blob, 'blockdozer_data.json');
+					saveAs(blob, host + '_offline_data.json');
 				}
 				else {
 					alert('File is empty..');
@@ -1701,25 +1772,22 @@ $(document).ready(function() {
 			}
 
 			var utxo_address = addresses.shift();
-
+                		
 			$.ajax({
 				type: "GET",
 				cache: false,
 				async: true,
-				url: "http://blockdozer.com/insight-api/addr/"+utxo_address+"/utxo",
+				url: createUTXOUrl(utxo_address),
 				dataType: "json",
 				error: function(data) {
 					alert('Can not retreive input values for Bitcoin Cash signatures.');
 					next();
 				},
 				success: function(data) {
-					if(data[0] == undefined) {
-						alert('Can not retreive input values for Bitcoin Cash signatures.');
-					}
-
-					if((data[0].address && data[0].txid) && data[0].address==utxo_address) {
+					if(validateApiData(data, utxo_address)) {
 						result[utxo_address] = data;
-					} else {
+					} 
+					else {
 						alert('Can not retreive input values for Bitcoin Cash signatures.');
 					}
 

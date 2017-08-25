@@ -1058,6 +1058,11 @@
 		}
 
 		r.getInputValues = function() {
+			throw "Not implemented";	// init function with dummy exception for futher function replacement
+		}
+
+		/* get UXTO values from Blockdozer (HTTPS not available) */
+		r.getInputValuesBlockdozer = function() {
 			var self = this;
 			for (var i = 0; i < self.ins.length; i++) {
 				var utxo_txid = self.ins[i].outpoint.hash;
@@ -1093,8 +1098,48 @@
 			}
 		}
 
+		/* get UXTO values from Blocktrail */
+		r.getInputValuesBlocktrail = function() {
+			var self = this;
+			for (var i = 0; i < self.ins.length; i++) {
+				var utxo_txid = self.ins[i].outpoint.hash;
+				var utxo_index = self.ins[i].outpoint.index;
+				var utxo_address = self.extractAddress(i);
 
-		r.getInputValuesOffline = function() {
+				$.ajax ({
+					type: "GET",
+					cache: false,
+					async: false,
+					url: "https://api.blocktrail.com/v1/bcc/address/"+utxo_address+"/unspent-outputs?api_key=MY_APIKEY&limit=200",
+					dataType: "json",
+					error: function(data) {
+						alert('Couldn\'t get values for inputs. Bitcoin Cash will not sign correctly.');
+					},
+					success: function(data) {
+                                                data = data.data;	// unwrap blocktrail top json level 'data'
+						if(data[0] == undefined)
+						{
+							alert('Can not retreive input values for Bitcoin Cash signatures.');
+						}
+						
+						if((data[0].address && data[0].hash) && data[0].address==utxo_address){
+							for(var i in data){
+								if (utxo_txid == data[i].hash
+								&& utxo_index == data[i].index) {
+									self.ins[i].value = new BigInteger(data[i].value.toString(), 10);
+								}
+							}
+						} else {
+							alert('Can not retreive input values for Bitcoin Cash signatures.');
+						}
+					}
+				});
+			}
+		}
+
+
+		/* get UXTO values from file (saved from Blockdozer) */
+		r.getInputValuesOfflineBlockdozer = function() {
 			var self = this;
 
 			var file = $('#signOfflineFile')[0];
@@ -1129,7 +1174,42 @@
 			}
 		}
 
+		/* get UXTO values from file (saved from Blocktrail) */
+		r.getInputValuesOfflineBlocktrail = function() {
+			var self = this;
 
+			var file = $('#signOfflineFile')[0];
+
+			if (!Boolean(file._data)) {
+				throw 'Select file';
+				return;
+			}
+
+			var blocktrail = file._data || {};
+
+			for (var i = 0; i < self.ins.length; i++) {
+				var utxo_txid = self.ins[i].outpoint.hash;
+				var utxo_index = self.ins[i].outpoint.index;
+				var utxo_address = self.extractAddress(i);
+
+				var data = blocktrail[utxo_address];
+				data = data.data;	// unwrap blocktrail top level 'data'
+
+				if(data[0] == undefined) {
+					alert('Can not retreive input values for Bitcoin Cash signatures.');
+				}
+				if((data[0].address && data[0].hash) && data[0].address==utxo_address) {
+					for(var j in data) {
+						if (utxo_txid == data[j].hash
+						&& utxo_index == data[j].index) {
+							self.ins[j].value = new BigInteger(data[j].value.toString(), 10);
+						}
+					}
+				} else {
+					alert('Can not retreive input values for Bitcoin Cash signatures.');
+				}
+			}
+		}
 
 		/* extract the scriptSig, used in the transactionHash() function */
 		r.extractScriptKey = function(index) {
@@ -1186,10 +1266,23 @@
 				return sequence;
 			}
 
-			var host = $("#coinjs_broadcast option:selected").val();
-			var isBitcoinCash = (host == 'blockdozer.com_bitcoincash');
-
+			var host = $("#coinjs_utxo option:selected").val();
+			var isBitcoinCash = (host == 'blockdozer.com_bitcoincash' || host == 'blocktrail.com_bitcoincash');
 			var isOffline = $('#signOfflineFlag').prop('checked');
+
+			if (host == 'blockdozer.com_bitcoincash') {
+				this.getInputValues = this.getInputValuesBlockdozer;
+				if (isOffline) {
+					this.getInputValues = this.getInputValuesOfflineBlockdozer;
+				}
+			}
+
+			if (host == 'blocktrail.com_bitcoincash') {
+				this.getInputValues = this.getInputValuesBlocktrail;
+				if (isOffline) {
+					this.getInputValues = this.getInputValuesOfflineBlocktrail;
+				}
+			}
 
 			var shType = sigHashType || 1;
 
@@ -1198,7 +1291,7 @@
 				shType = shType | 0x40;
 				for (var i = 0; i < this.ins.length; i++) {
 					if (this.ins[i].value == undefined) {
-						(isOffline) ? this.getInputValuesOffline() : this.getInputValues();
+						this.getInputValues();
 					}
 				}
 			}
