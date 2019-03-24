@@ -5,6 +5,7 @@ $(document).ready(function() {
 	var explorer_tx = "https://coinb.in/tx/"
 	var explorer_addr = "https://coinb.in/addr/"
 	var explorer_block = "https://coinb.in/block/"
+	var explorer_bitaps = "https://bitaps.com/"
 
 	var wallet_timer = false;
 
@@ -854,7 +855,8 @@ $(document).ready(function() {
 	/* redeem from button code */
 
 	$("#redeemFromBtn").click(function(){
-		var redeem = redeemingFrom($("#redeemFrom").val());	
+		var redeemAddrType = $("#redeemFrom").attr('data-redeemType');
+		var redeem = redeemingFrom($("#redeemFrom").val(), redeemAddrType);
 
 		$("#redeemFromStatus, #redeemFromAddress").addClass('hidden');
 
@@ -864,7 +866,7 @@ $(document).ready(function() {
 		}
 
 		if(redeem.from=='other'){
-			$("#redeemFromStatus").removeClass('hidden').html('<span class="glyphicon glyphicon-exclamation-sign"></span> The address or redeem script you have entered is invalid');
+			$("#redeemFromStatus").removeClass('hidden').html('<span class="glyphicon glyphicon-exclamation-sign"></span> The address or redeem script you have entered is invalid<br>(if bech32 redeem script entered - this still broken, use bech32 address of WIF key instead)');
 			return false;
 		}
 
@@ -880,8 +882,8 @@ $(document).ready(function() {
 			listUnspentChainso_Litecoin(redeem);
 		} else if(host=='chain.so_dogecoin'){
 			listUnspentChainso_Dogecoin(redeem);
-		} else if(host=='cryptoid.info_carboncoin'){
-			listUnspentCryptoidinfo_Carboncoin(redeem);
+		} else if(host=='digibyteblockexplorer.com'){
+			listUnspentDigibyteblockexplorerCom(redeem);
 		} else {
 			listUnspentDefault(redeem);
 		}
@@ -897,18 +899,42 @@ $(document).ready(function() {
 	});
 
 	/* function to determine what we are redeeming from */
-	function redeemingFrom(string){
+	function redeemingFrom(string,redeemtype){
 		var r = {};
 		var decode = coinjs.addressDecode(string);
+
+		if (decode.version == coinjs.priv){
+			$("#legacyRedeemTypeBtn").removeAttr('disabled');
+			$("#segwitRedeemTypeBtn").removeAttr('disabled');
+			$("#bech32RedeemTypeBtn").removeAttr('disabled');
+		} else {
+			$("#legacyRedeemTypeBtn").attr('disabled','disabled');
+			$("#segwitRedeemTypeBtn").attr('disabled','disabled');
+			$("#bech32RedeemTypeBtn").attr('disabled','disabled');
+		}
+
 		if(decode.version == coinjs.pub){ // regular address
 			r.addr = string;
 			r.from = 'address';
 			r.redeemscript = false;
 		} else if (decode.version == coinjs.priv){ // wif key
-			var a = coinjs.wif2address(string);
+			var pubkey = coinjs.wif2pubkey(string).pubkey;
+			switch (redeemtype) {
+				case 'legacy':
+					var a = coinjs.wif2address(string);
+					break;
+				case 'segwit':
+					var a = coinjs.segwitAddress(pubkey);
+					break;
+				case 'bech32':
+					var a = coinjs.bech32Address(pubkey);
+					break;
+			}
 			r.addr = a['address'];
 			r.from = 'wif';
 			r.redeemscript = false;
+			r.redeemtype = redeemtype;
+			r.pubkey = pubkey;
 		} else if (decode.version == coinjs.multisig){ // mulisig address
 			r.addr = '';
 			r.from = 'multisigAddress';
@@ -921,6 +947,7 @@ $(document).ready(function() {
 		} else {
 			var script = coinjs.script();
 			var decodeRs = script.decodeRedeemScript(string);
+
 			if(decodeRs){ // redeem script
 				r.addr = decodeRs['address'];
 				r.from = 'redeemScript';
@@ -936,6 +963,30 @@ $(document).ready(function() {
 		}
 		return r;
 	}
+
+	/* redeem type manual select */
+	$("#legacyRedeemTypeBtn").click(function(){
+		$("#redeemFrom").attr('data-redeemType','legacy');
+		$("#legacyRedeemTypeBtn").addClass('btn-success').removeClass('btn-info');
+		$("#segwitRedeemTypeBtn").addClass('btn-info').removeClass('btn-success');
+		$("#bech32RedeemTypeBtn").addClass('btn-info').removeClass('btn-success');
+		$("#redeemFromBtn").click();
+	});
+	$("#segwitRedeemTypeBtn").click(function(){
+		$("#redeemFrom").attr('data-redeemType','segwit');
+		$("#legacyRedeemTypeBtn").addClass('btn-info').removeClass('btn-success');
+		$("#segwitRedeemTypeBtn").addClass('btn-success').removeClass('btn-info');
+		$("#bech32RedeemTypeBtn").addClass('btn-info').removeClass('btn-success');
+		$("#redeemFromBtn").click();
+	});
+	$("#bech32RedeemTypeBtn").click(function(){
+		$("#redeemFrom").attr('data-redeemType','bech32');
+		$("#legacyRedeemTypeBtn").addClass('btn-info').removeClass('btn-success');
+		$("#segwitRedeemTypeBtn").addClass('btn-info').removeClass('btn-success');
+		$("#bech32RedeemTypeBtn").addClass('btn-success').removeClass('btn-info');
+		$("#redeemFromBtn").click();
+	});
+
 
 	/* mediator payment code for when you used a public key */
 	function mediatorPayment(redeem){
@@ -980,7 +1031,12 @@ $(document).ready(function() {
 
 			$("#inputs .row:last input").attr('disabled',true);
 
-			var txid = ((tx).match(/.{1,2}/g).reverse()).join("")+'';
+			// stick non-standard coinb.in txid output and digibyteblockexplorer.com
+			if ($("#redeemFromBtn").attr('rel') == 'digibyteblockexplorer.com' ) {
+				var txid = tx;
+			} else {
+				var txid = ((tx).match(/.{1,2}/g).reverse()).join("")+'';
+			}
 
 			$("#inputs .txId:last").val(txid);
 			$("#inputs .txIdN:last").val(n);
@@ -1003,14 +1059,20 @@ $(document).ready(function() {
 		var tx = coinjs.transaction();
 		tx.listUnspent(redeem.addr, function(data){
 			if(redeem.addr) {
-				$("#redeemFromAddress").removeClass('hidden').html('<span class="glyphicon glyphicon-info-sign"></span> Retrieved unspent inputs from address <a href="'+explorer_addr+redeem.addr+'" target="_blank">'+redeem.addr+'</a>');
+				$("#redeemFromAddress").removeClass('hidden').html('<span class="glyphicon glyphicon-info-sign"></span> Retrieved unspent inputs from address <a href="'+explorer_bitaps+redeem.addr+'" target="_blank">'+redeem.addr+'</a>');
 
 				$.each($(data).find("unspent").children(), function(i,o){
 					var tx = $(o).find("tx_hash").text();
 					var n = $(o).find("tx_output_n").text();
 					var script = (redeem.redeemscript==true) ? redeem.decodedRs : $(o).find("script").text();
+					if (redeem.redeemtype == 'segwit'){
+						var keyhash = [0x00,0x14].concat(ripemd160(Crypto.SHA256(Crypto.util.hexToBytes(redeem.pubkey), {asBytes: true}), {asBytes: true}));
+						var script = Crypto.util.bytesToHex(keyhash);
+					}
+					if (redeem.redeemtype == 'bech32'){
+						var script = coinjs.bech32redeemscript(redeem.addr);
+					}
 					var amount = (($(o).find("value").text()*1)/100000000).toFixed(8);
-
 					addOutput(tx, n, script, amount);
 				});
 			}
@@ -1022,6 +1084,37 @@ $(document).ready(function() {
 		});
 	}
 
+	/* retrieve unspent data from digibyteblockexplorer.com for digibyte */
+	function listUnspentDigibyteblockexplorerCom(redeem){
+		$.ajax ({
+			type: "GET",
+			url: "https://digibyteblockexplorer.com/api/addr/"+redeem.addr+"/utxo",
+			dataType: "json",
+			error: function(data) {
+				$("#redeemFromStatus").removeClass('hidden').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Unexpected error, unable to retrieve unspent outputs!');
+			},
+			success: function(data) {
+				if(data && data.length){
+					$("#redeemFromAddress").removeClass('hidden').html(
+						'<span class="glyphicon glyphicon-info-sign"></span> Retrieved unspent inputs from address <a href="'+explorer_addr+redeem.addr+'" target="_blank">'+redeem.addr+'</a>');
+						for(var i in data){
+							var o = data[i];
+							var tx = o.txid;
+							var n = o.vout;
+							var script = (redeem.isMultisig==true) ? $("#redeemFrom").val() : o.scriptPubKey;
+							var amount = o.amount;
+							addOutput(tx, n, script, amount);
+						}
+				} else {
+					$("#redeemFromStatus").removeClass('hidden').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Unexpected error, unable to retrieve unspent outputs.');
+				}
+			},
+			complete: function(data, status) {
+				$("#redeemFromBtn").html("Load").attr('disabled',false);
+				totalInputAmount();
+			}
+		});
+	}
 
 	/* retrieve unspent data from chainso for litecoin */
 	function listUnspentChainso_Litecoin(redeem){
@@ -1205,6 +1298,35 @@ $(document).ready(function() {
 			complete: function(data, status) {
 				$("#rawTransactionStatus").fadeOut().fadeIn();
 				$(thisbtn).val('Submit').attr('disabled',false);				
+			}
+		});
+	}
+
+	function rawSubmitDigibyteblockexplorerCom(thisbtn){
+		$(thisbtn).val('Please wait, loading...').attr('disabled',true);
+		$.ajax ({
+			type: "POST",
+			url: "https://digibyteblockexplorer.com/api/tx/send",
+			data: JSON.stringify({ "rawtx": $("#rawTransaction").val() }),
+			dataType : "json",
+			contentType: "application/json",
+      error: function(data) {
+				var obj = data.responseText;
+				var r = ' ';
+				r += (obj) ? ' '+obj : '';
+				r = (r!='') ? r : ' Failed to broadcast'; // build response
+				$("#rawTransactionStatus").addClass('alert-danger').removeClass('alert-success').removeClass("hidden").html(r).prepend('<span class="glyphicon glyphicon-exclamation-sign"></span>');
+			},
+			success: function(data) {
+				if(data){
+					$("#rawTransactionStatus").addClass('alert-success').removeClass('alert-danger').removeClass("hidden").html(' Txid: ' + data.txid);
+				} else {
+					$("#rawTransactionStatus").addClass('alert-danger').removeClass('alert-success').removeClass("hidden").html(' Unexpected error, please try again').prepend('<span class="glyphicon glyphicon-exclamation-sign"></span>');
+				}
+			},
+			complete: function(data, status) {
+				$("#rawTransactionStatus").fadeOut().fadeIn();
+				$(thisbtn).val('Submit').attr('disabled',false);
 			}
 		});
 	}
@@ -1822,6 +1944,10 @@ $(document).ready(function() {
 		if(host=="chain.so_bitcoinmainnet"){
 			$("#rawSubmitBtn").click(function(){
 				rawSubmitChainso_BitcoinMainnet(this);
+			});
+		} else if(host=="digibyteblockexplorer.com"){
+			$("#rawSubmitBtn").click(function(){
+				rawSubmitDigibyteblockexplorerCom(this);
 			});
 		} else if(host=="chain.so_dogecoin"){
 			$("#rawSubmitBtn").click(function(){

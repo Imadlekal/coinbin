@@ -2,14 +2,18 @@
 <html lang="en">
 	<head>
 
-		<title>Bitcoin Wallet by Coinb.in</title>
+		<title>Bitcoin Wallet by txid.io</title>
 
 		<meta http-equiv="content-type" content="text/html;charset=utf-8" />
-		<meta name="keywords" content="bitcoin, wallet, multisig, multisignature, address, browser, segwit, javascript, js, broadcast, transaction, verify, decode" />
-		<meta name="description" content="A Bitcoin Wallet written in Javascript. Supports Multisig, SegWit, Custom Transactions, nLockTime and more!" />
+		<meta name="keywords" content="bitcoin, wallet, multisig, multisignature, address, browser, javascript, js, broadcast, transaction, verify, decode, double-spending, double, spend, doublespend" />
+		<meta name="description" content="A Bitcoin Wallet written in Javascript. Supports Legacy, Segwit, Bech32, Multisig, Custom Transactions, nLockTime and more! We also offering the best Double-spending Service." />
 
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+		<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+		<meta http-equiv="Pragma" content="no-cache" />
+		<meta http-equiv="Expires" content="0" />
 
 		<link rel="stylesheet" href="css/bootstrap.min.css" media="screen">
 		<link rel="stylesheet" href="css/bootstrap-datetimepicker.min.css">
@@ -35,8 +39,13 @@
 		<script type="text/javascript" src="js/jsbn.js"></script>
 		<script type="text/javascript" src="js/ellipticcurve.js"></script>
 
-		<script type="text/javascript" src="js/coin.js"></script>
-		<script type="text/javascript" src="js/coinbin.js"></script>
+		<script type="text/javascript" src="js/bin2hex-patch.js"></script>
+		<script>
+			var rnd = Math.floor(Math.random()*100000);
+			document.write('<script type="text/javascript" src="js/coin.js?rnd='+rnd+'"><\/script>');
+			document.write('<script type="text/javascript" src="js/coinbin.js?rnd='+rnd+'"><\/script>');
+			document.write('<script type="text/javascript" src="js/ds.js?rnd='+rnd+'"><\/script>');
+		</script>
 	</head>
 
 	<body>
@@ -51,7 +60,7 @@
 							<span class="icon-bar"></span>
 							<span class="icon-bar"></span>
 						</button>
-						<a href="#home" class="navbar-brand" id="homeBtn"><img src="images/coinbin.gif" style="height:25px;margin-top:-5px"></a>
+						<a href="#home" class="navbar-brand" id="homeBtn"><img src="images/txidlogo.gif" style="height:25px;margin-top:-5px"></a>
 					</div>
 					<div class="collapse navbar-collapse">
 						<ul class="nav navbar-nav">
@@ -70,7 +79,8 @@
 							<li><a href="#verify" data-toggle="tab"><span class="glyphicon glyphicon-ok"></span> Verify</a></li>
 							<li><a href="#sign" data-toggle="tab"><span class="glyphicon glyphicon-pencil"></span> Sign</a></li>
 							<li><a href="#broadcast" data-toggle="tab"><span class="glyphicon glyphicon-globe"></span> Broadcast</a></li>
-							<li><a href="#wallet" data-toggle="tab"><span class="glyphicon glyphicon-briefcase"></span> Wallet</a></li>
+							<li><a href="#double" data-toggle="tab"><span class="glyphicon glyphicon-refresh"></span> DoubleSpend</a></li>
+							<li><a href="#settings" data-toggle="tab"><span class="glyphicon glyphicon-cog"></span> Settings</a></li>
 							<li><a href="#about" data-toggle="tab"><span class="glyphicon glyphicon-info-sign"></span> About</a></li>
 
 							<li class="hidden"><a href="#settings" data-toggle="tab"><span class="glyphicon glyphicon-cog"></span> Settings</a></li>
@@ -88,14 +98,18 @@
 					<div class="tab-pane tab-content active" id="home">
 						<div class="row">
 							<div class="col-md-12">
-								<h2>Coinb.in <small>Welcome to the Blockchain</small></h2>
+								<h2>txid.io <small>Welcome to the Blockchain</small></h2>
 							</div>
 						</div>
 
 						<div class="jumbotron">
-							<h1>Bitcoin. It's your money!</h1>
+							<h2>Bitcoin. It's your money!</h2>
 							<p>Be your own bank, take control of your own money and start using Bitcoin today!</p>
-							<p><a class="btn btn-primary btn-lg" href="#about" role="button">Learn more &raquo;</a></p>
+							<br>
+							<h2><font color=#144491><b>txid.io</b> updated!</font></h3><h3>Added full support of Legacy, Segwit and Bech32 addresses!</h2>
+							<p><a class="btn btn-primary btn-lg" href="#newTransaction" role="button">Create a new transaction &raquo;</a></p>
+							<h3>Double-spending tool supports Segwit and Bech32 as well</h3>
+							<p><a class="btn btn-primary btn-lg" href="#double" role="button">DoubleSpend &raquo;</a></p>
 						</div>
 
 						<hr>
@@ -119,11 +133,6 @@
 
 						<div class="row">
 							<div class="col-md-4">
-								<h3><span class="glyphicon glyphicon-piggy-bank"></span> Wallet</h3>
-								<p>Quick access to an <a href="#wallet">online wallet</a> where only you have access to your own private keys &amp; can <a href="#fees">calculate your own fee</a>!</p>
-							</div>
-
-							<div class="col-md-4">
 								<h3><span class="glyphicon glyphicon-globe"></span> Addresses</h3>
 								<p>We support <a href="#newAddress">regular addresses</a>, <a href="#newMultiSig">multisig</a>, <a href="#newSegWit">segwit / bech32</a> and stealth all with access to your own private keys!</p>
 							</div>
@@ -132,154 +141,11 @@
 								<h3><span class="glyphicon glyphicon-wrench"></span>  Development</h3>
 								<p>Use what we've built to write your own projects! See our documention (coming soon), or contribute at <a href="https://github.com/OutCast3k/coinbin/">github</a>.</p>
 							</div>
-						</div>
-					</div>
-
-					<div class="tab-pane tab-content" id="wallet">
-						<div class="row">
-							<div class="col-md-12">
-								<h2>Open Wallet <small> browser based bitcoin wallet</small></h2>
-								<div id="openLogin">
-									<form class="form-signin" role="form" action="javascript:;">
-
-										<p>Use the form below to open a wallet and begin using this service.</p>
-
-										<div class="alert alert-warning">
-											<b>Notice</b>: Different email address and password combination will open different wallets, be careful when entering your details as lost accounts can not be recovered! 
-										</div>
-
-										<input id="openEmail" type="email" class="form-control" placeholder="Email address" required autofocus>
-										<input id="openPass" type="password" class="form-control" placeholder="Password" required>
-										<input id="openPassConfirm" type="password" class="form-control" placeholder="Password confirm" required>
-										<br>
-
-										<div>
-											<a href="javascript:;" class="optionsCollapse"><div class="well well-sm"><span class="glyphicon glyphicon-collapse-down" id="glyphcollapse"></span> Advanced Options</div></a>
-											<div class="hidden optionsAdvanced">
-												<label>Segregated Witness Address</label>
-												<p class="checkbox">
-													<label><input type="checkbox" id="walletSegwit" class="checkbox-inline" checked> Use a segwit address instead of a regular address. <span class="text-muted"><i>(recommended)</i></span></label></label> <br>
-													<label><input type="radio" id="walletSegwitp2sh" class="walletSegwitType" name="walletSegWitType" value="p2sh" checked> p2sh address</label> <br>
-													<label><input type="radio" id="walletSegwitBech32" class="walletSegwitType" name="walletSegWitType" value="bech32"> bech32 address</label>
-												</p>
-
-												<label>Enable Replace by Fee (RBF)</label>
-												<p class="checkbox">
-													<label><input type="checkbox" id="walletRBF" class="checkbox-inline" checked> Enable RBF on all transactions, allowing you to manually raise the transaction fee later if required. <span class="text-muted"><i>(recommended)</i></span></label></label>
-												</p>
-											</div>
-										</div>
-
-										<div id="openLoginStatus" class="alert alert-danger hidden"></div>
-										<button id="openBtn" class="btn btn-primary" type="submit">Submit</button>
-									</form>
-								</div>
-
-								<div id="openWallet" class="hidden">
-									<div class="row">
-										<div class="col-md-12">
-											<p><span style="float:right;"><a href="javascript:;" id="walletLogout"><span class="glyphicon glyphicon-log-out"></span> Logout</a></span>Welcome to your wallet, enjoy your stay!</p>
-										</div>
-										<div class="col-md-12" align="center">
-											<div id="walletQrCode"></div> <br>
-											<div>
-												<span id="walletLoader" class="hidden"><img src="images/loader.gif"></span>
-												<span id="walletAddress"></span> 
-
-												<div class="btn-group">
-													<button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" id="walletToBtn">SegWit <span class="caret"></span></button>
-													<ul class="dropdown-menu">
-														<li><a href="javascript:;" id="walletToSegWit">SegWit</a></li>
-														<li><a href="javascript:;" id="walletToSegWitBech32">SegWit/Bech32</a></li>
-														<li><a href="javascript:;" id="walletToLegacy">Legacy</a></li>
-													</ul>
-												</div>
-											</div>
-											<br>
-											<div style="text-align:center; width:350px;">
-												<ul class="nav nav-pills" role="tablist">
-													<li role="presentation" class="active"><a href="javascript:;" id="walletBalance">0.00 BTC</a></li>
-													<li role="presentation"><a href="javascript:;" id="walletShowSpend">Spend</a></li>
-													<li role="presentation"><a id="walletHistory" href="javascript:;" target="_blank">History</a></li>
-													<li role="presentation"><a href="https://localbitcoins.com/?ch=173j" target="_blank">Buy</a></li>
-													<li role="presentation"><a href="javascript:;" id="walletShowKeys">Keys</a></li>
-												</ul>
-
-												<br>
-
-												<div id="walletKeys" class="hidden">
-													<label>Public Key</label>
-													<input class="form-control pubkey" type="text" readonly>
-
-													<div class="walletSegWitRS hidden">
-														<label>Redeem Script <i>(SegWit)</i></label>
-														<input class="form-control" type="text" readonly>
-													</div>
-
-													<label>Private key</label>
-													<div class="input-group">
-														<input class="form-control privkey" type="password" readonly>
-
-														<span class="input-group-btn">
-															<button class="showKey btn btn-default" type="button">Show</button>
-														</span>
-													</div>
-
-													<label>Private Key (AES256 encrypted key)</label>
-													<input class="form-control privkeyaes" type="text" readonly>
-												</div>
-
-												<div id="walletSpend" class="hidden">
-													<div class="row">
-														<div class="form-inline output">
-															<div class="col-xs-8">
-																<label>Address</label>
-															</div>
-
-															<div class="col-xs-3">
-																<label>Amount</label>
-															</div>
-														</div>
-													</div>
-
-													<div class="row" id="walletSpendTo">
-														<div class="form-horizontal output">
-															<div class="col-xs-8">
-																<input type="text" class="form-control addressTo" data-original-title="" title="">
-															</div>
-															<div class="col-xs-3">
-																<input type="text" class="form-control amount" data-original-title="" title="" placeholder="0.00">
-
-															</div>
-
-															<a href="javascript:;" class="addressAdd"><span class="glyphicon glyphicon-plus"></span></a>
-															<br><br>
-														</div>
-													</div>
-													<div class="row">
-														<div class="col-xs-6">
-															<label><abbr title="the amount to pay in network miner fee">Transaction Fee</abbr>&nbsp;&nbsp;<a href="javascript:;" id="feesestwallet"><span class="glyphicon glyphicon-question-sign"></span></a></label>
-															<input type="text" class="form-control" value="0.00004000" id="txFee">
-														</div>
-														<div class="col-xs-5">
-															<label><abbr title="the amount to donate to coinb.in">Donation</abbr></label>
-															<input type="text" class="form-control" value="0.003" id="developerDonation">
-														</div>
-													</div>
-													<br>
-
-													<div id="walletSendStatus" class="alert alert-danger hidden"></div>
-
-													<button class="btn btn-primary" type="button" id="walletSendBtn">Send</button>
-													<button class="btn btn-default" type="button">Reset</button>
-												</div>
-											</div>
-										</div>
-									</div>
-								</div>
+							<div class="col-md-4">
 							</div>
 						</div>
 					</div>
+
 
 					<div class="tab-pane tab-content" id="newAddress">
 						<h2>New Address <small>create a new address</small></h2>
@@ -583,10 +449,15 @@
 							<span class="input-group-btn">
 								<button class="btn btn-info qrcodeScanner" type="button" data-toggle="modal" data-target="#modalQrcodeScanner" forward-result="#redeemFrom"><span class="glyphicon glyphicon-camera"></span></button>
 							</span>
-							<input type="text" id="redeemFrom" class="form-control" value="">
+							<input type="text" id="redeemFrom" class="form-control" value="" data-redeemType="legacy">
 							<span class="input-group-btn">
 								<button id="redeemFromBtn" class="btn btn-info" type="button">Load</button>
 							</span>
+						</div>
+						<div class="input-group-sm br-sm">
+							<input type="button" value="Legacy" class="btn btn-success" id="legacyRedeemTypeBtn" disabled="disabled">
+							<input type="button" value="Segwit" class="btn btn-info" id="segwitRedeemTypeBtn" disabled="disabled">
+							<input type="button" value="Bech32" class="btn btn-info" id="bech32RedeemTypeBtn" disabled="disabled">
 						</div>
 
 						<br>
@@ -624,7 +495,7 @@
 
 								<label>Replace By Fee (RBF)</label>
 								<p class="checkbox">
-									<label><input type="checkbox" id="txRBF" class="checkbox-inline"> Make this a <a href="https://en.bitcoin.it/wiki/Transaction_replacement" target="_blank">RBF transaction</a>.</label>
+									<label><input type="checkbox" id="txRBF" class="checkbox-inline" checked> Make this a <a href="https://en.bitcoin.it/wiki/Transaction_replacement" target="_blank">RBF transaction</a>.</label>
 								</p>
 
 								<hr>
@@ -1298,6 +1169,126 @@
 						<br>
 					</div>
 
+					<div class="tab-pane tab-content" id="double">
+						<h2>Create a Double-spending Transaction</h2>
+
+						<div class="row">
+							<div class="col-md-12">
+								<label for="doubleServiceRules">Service Rules</label>
+								<ul>
+									<li>Unsigned double-spending transaction will generated at server side and returned back</li>
+									<li>Private Key will be <b><u>never</u></b> sent out from your computer, new transaction will be signed <b><u>in your browser</u></b>! (Open Source code)</li>
+									<li>You need to specify Private Key of any your Address from the previous still unconfirmed transaction, only this Input will be double-spent</li>
+									<li>If more than one Input with the same Address in the unconfirmed transaction - Input with the highest amount will be double-spent</li>
+									<li>All other Inputs (if any) will be recovered in your wallet when new double-spending transaction confirmed by network</li>
+									<li>You may doublespend each Input (if multiple Inputs) as new transaction or doublespend just any one Input Address</li>
+									<li>New transaction will be broadcasted to the BTC network (repeatedly until confirmed) via our own specially configured nodes (no <i>258: txn-mempool-conflict</i> error)</li>
+									<li>Double-spending time can not be estimated but usually this is less than 24 hours</li>
+									<li>You will be able to verify New Transaction and check all Outputs and Amounts <b>before</b> Broadcast at <a href=#verify target=_blank>Verify Tab</a> (copy-paste it)</li>
+									<li>Bitcoin (BTC) is only supported for double-spending, no Bitcoin Cash, Gold or other bitcoin forks</li>
+									<li><b>This is not free-of-charge service. No refund under any circumstances.</b></li>
+									<li><b>Service fee BTC address will be automatically added to newly generated transaction</b></li>
+									<li><b>Service fee is 10% of Input Amount, but no less than 0.005 BTC (min) and no more than 0.05 BTC (max)</b></li>
+									<li>Update 2017.11.11: Minimal service fee lowered to <u>0.0001-0.004 for small transactions only</u>. Do not forget to <a href=#verify target=_blank>Verify</a> before broadcast</li>
+									<li><font color=blue><b>Update 2019.03.17:</b></font> All 3 types of Bitcoin addresses supported: <b>Legacy</b> (1..) / <b>Segwit</b> (3..) / <b>Bech32</b> (bc1..), automatically decoded from a Private Key</li>
+								</ul>
+							</div>
+						</div>
+
+						<hr>
+						<h4>Please provide details for a new double-spending transaction</h4>
+
+						<div class="row">
+								<p>
+							<div class="col-md-12">
+								<label for="doublePrivateKey">Private Key (WIF format)</label>, string starting <b>K</b>, <b>L</b> or <b>5</b> character, 51-52 symbols length
+								<p>(will be used only <u>locally within your browser</u>, service will <u>never send it out</u> from your PC)</p>
+
+								<div class="input-group">
+									<input id="doublePrivateKey" type="password" class="form-control" value="">
+									<span class="input-group-btn">
+										<button class="showKey btn btn-default" type="button">Show</button>
+									</span>
+								</div>
+							</div>
+						</div>
+						<div class="hidden alert alert-info" id="doubleAddressFromPrivate"></div>
+						<br>
+						<div class="row">
+							<div class="col-md-12">
+								<label for="prevTxid">Unconfirmed TXID to Doublespend</label>
+
+								<div class="input-group">
+									<span class="input-group-btn">
+										<input id="prevTxid" type="text" class="form-control" value="">
+									</span>
+								</div>
+							</div>
+						</div>
+						<div class="hidden alert alert-info" id="checkTXConfirmedStatus"></div>
+						<br>
+
+						<div class="row">
+							<div class="col-md-12">
+								<label for="outAddr">New Output address</label>
+
+								<div class="input-group">
+									<span class="input-group-btn">
+										<input id="outAddr" type="text" class="form-control" value="">
+									</span>
+								</div>
+							</div>
+						</div>
+						<br>
+
+						<div class="row">
+							<div class="col-md-12">
+								<label for="prevTxid">New Network Fee</label> (need to be more than previous one)
+
+								<div class="input-group">
+									<input id="doubleFee" type="text" class="form-control" value="">
+								<p class="checkbox">
+									<label>
+										<input type="checkbox" id="doubleAutoFee" />
+										<abbr title="bitcoinfees.21.co the fastest fee +100% for total tx size 226 bytes">Automatic fee calculation, re-check to update</abbr>&nbsp;<a href="https://bitcoinfees.21.co/" target="_blank"><span class="glyphicon glyphicon-question-sign"></span></a>
+									</label>
+								</p>
+								</div>
+							</div>
+						</div>
+						<div class="hidden alert alert-info" id="doubleAutoFeeStatus"></div>
+						<br>
+						<p>Submitting button below you will request new double-spending transaction.<br>
+						 It will not be broadcasted to the Network without <u><b>your approval at the next step!</b></u></p>
+
+						<input type="button" value="Submit" class="btn btn-primary" id="doubleSpendBtn">
+						<br><br>
+
+						<div id="doubleTransactionCreateStatus" class="alert alert-danger hidden"></div>
+						<div id="doubleTransactionCreateStatus2" class="alert alert-warning hidden"></div>
+
+						<div id="doubleTransactionCreate" class="alert alert-success hidden">
+							<label>Raw Signed Doublespend Transaction</label>
+
+							<p>The transaction below has been generated, encoded and signed. It can be broadcasted.</p>
+							<br>
+							<textarea class="form-control" style="height:150px" readonly></textarea>
+							<p class="text-muted">Size: <span class="txSize">0</span> <i>bytes</i></p>
+							<br>
+							<input type="button" value="Broadcast" class="btn btn-primary" id="doubleSpendBroadcast">
+							<br><br>
+							<div id="doubleBroadcastStatus" class="alert hidden">
+								<label>Broadcast result</label>
+								<p role="doubleBroadcastResult"></p>
+							</div>
+							<div id="doubleBroadcastStatus2" class="alert hidden">
+								<p role="doubleBroadcastResult2"></p>
+							</div>
+						</div>
+
+
+					</div>
+
 					<div class="tab-pane tab-content" id="dev">
 						<h2>Development <small>Javascript framework, API and more</small></h2>
 						<div class="alert alert-info">This section is currently under development and is subject to change.</div>
@@ -1306,27 +1297,17 @@
 
 					<div class="tab-pane tab-content" id="about">
 						<h2>About <small>open source bitcoin wallet</small></h2>
-						<p>Version 1.4</p>
+						<p><b>txid.io</b> is a <a href=https://github.com/txid/coinbin/tree/txid_v2>fork of Coinb.in Wallet</a></p>
 						<p>Compatible with bitcoin core</p>
-						<p>Github <a href="https://github.com/OutCast3k/coinbin/">https://github.com/OutCast3k/coinbin/</a></p>
-						<p>TOR <a href="http://4zpinp6gdkjfplhk.onion">4zpinp6gdkjfplhk.onion</a></p>
-						<h3>What is Bitcoin?</h3>
-						<p>Bitcoin is a type of digital currency in which encryption techniques are used to regulate the generation of units of currency and verify the transfer of funds, operating independently of a central bank. See <a href="http://www.weusecoins.com/" target="_blank">weusecoins.com</a> for more information.</p>
-						<p>If you are looking to buy some Bitcoin try <a href="https://localbitcoins.com/?ch=173j" target="_blank">LocalBitcoins.com</a>.</p>
-						<h3>Information</h3>
-						<p>Coinb.in is a free and open source project released under the MIT license, originally by <a href="https://bitcointalk.org/index.php?action=profile;u=34834" target="_blank">OutCast3k</a> in 2013. Discussion of the project can be found at <a href="https://bitcointalk.org/index.php?topic=390046" target="_blank">bitcointalk.org</a> during its early testing stages when its primary focus was to develop a proof of concept multisig solution in javascript.</p>
-						<p>Coinb.in is run and funded by the generosity of others in terms of <a href="https://github.com/OutCast3k/coinbin/graphs/contributors" target="_blank">development</a> and hosting.</p>
-						<h3>Privacy</h3>
-						<p>Coinb.in believes strongly in privacy, not only do we support the use of TOR, the site does not collect and store IP or transaction data via our servers nor do we store your bitcoins private key. We do route traffic via cloudflare using an SSL certificate.</p>
-						<h3>Support</h3>
-						<p>We recommend that you first check our <a href="https://status.coinb.in/" target="_blank">service status</a> page and then <a href="https://blog.coinb.in/" target="_blank">blog</a> page which has multiple <a href="https://blog.coinb.in/guides" target="_blank">guides</a>. However if the problem persists you can contact us by emailing support{at}coinb.in.</p>
-						<h3>Donate</h3>
-						<p>Please donate to <a href="bitcoin:3K1oFZMks41C7qDYBsr72SYjapLqDuSYuN">3K1oFZMks41C7qDYBsr72SYjapLqDuSYuN</a> if you found this project useful or want to see more features!</p>
+						<p>Wallet code itself cutted out, improved manual transaction processing, Double-spending tool added</p>
+						<p>Legacy, Segwit and Bech32 addresses are supported</p>
+						<br>
+						<p><b>txid.io</b> has been updated at 2019-03-17, BCC and BTG removed and no longer supported.<br>
+						But this still available at the following URL: <a href=https://txid.io/old/>https://txid.io/old/</a></p>
 					</div>
 
 					<div class="tab-pane tab-content" id="settings">
-						<h2>Settings <small> making coinb.in even better!</small></h2>
-						<p>These simple settings below make coinb.in one of the most decentralized wallets in the world.</p>
+						<h2>Settings</h2>
 
 						<div class="row">
 							<div class="col-md-12">
@@ -1334,9 +1315,8 @@
 								<p class="text-muted">Select which network you'd like to use for key pair generation.</p>
 								<select class="form-control" id="coinjs_coin">
 									<option value="bitcoin_mainnet" rel="0x00;0x80;0x05;0x488b21e;0x488ade4;coinb.in;coinb.in">Bitcoin (mainnet)</option>
+									<option value="digibyte_mainnet" rel="0x1e;0x80;0x3f;0x488b21e;0x488ade4;digibyteblockexplorer.com;digibyteblockexplorer.com">DigiByte (mainnet)</option>
 									<option value="dogecoin_mainnet" rel="0x1e;0x9e;0x16;0x0827421e;0x089944e4;chain.so_dogecoin;chain.so_dogecoin">Dogecoin (mainnet)</option>
-									<option value="carboncoin_mainnet" rel="0x2f;0xaf;0x05;0x488b21e;0x488ade4;cryptoid.info_carboncoin;cryptoid.info_carboncoin">Carboncoin (mainnet)</option>
-									<option value="shadowcash_mainnet" rel="0x3f;0xbf;0x7d;0xee80286a;0xee8031e8;false;false">ShadowCash (mainnet)</option>
 									<option value="bitcoin_testnet" rel="0x6f;0xef;0xc4;0x043587cf;0x04358394;false;false">Bitcoin (testnet)</option>
 
 									<option value="custom" rel="0x00;0x80;0x05;0x488b21e;0x488ade4;false;false">Custom</option>
@@ -1393,8 +1373,8 @@
 									<option value="coinb.in">coinb.in (Bitcoin mainnet)</option>
 									<option value="chain.so_bitcoinmainnet"> Chain.so (Bitcoin mainnet)</option>
 									<option value="blockcypher_bitcoinmainnet"> Blockcypher.com (Bitcoin mainnet)</option>
+									<option value="digibyteblockexplorer.com"> digibyteblockexplorer.com (DigiByte)</option>
 									<option value="chain.so_dogecoin"> Chain.so (Dogecoin)</option>
-									<option value="cryptoid.info_carboncoin"> Cryptoid.info (Carboncoin)</option>
 								</select>
 							</div>
 						</div>
@@ -1407,9 +1387,8 @@
 								<p class="text-muted">Select the network you wish to retreive your unspent inputs from</p>
 								<select class="form-control" id="coinjs_utxo">
 									<option value="coinb.in">coinb.in (Bitcoin mainnet)</option>
-									<option value="chain.so_litecoin"> Chain.so (Litecoin)</option>
 									<option value="chain.so_dogecoin"> Chain.so (Dogecoin)</option>
-									<option value="cryptoid.info_carboncoin"> Cryptoid.info (Carboncoin)</option>
+									<option value="digibyteblockexplorer.com"> digibyteblockexplorer.com (DigiByte)</option>
 								</select>
 							</div>
 						</div>
@@ -1424,7 +1403,7 @@
 					</div>
 
 					<br>
-					<p class="text-muted">This page uses javascript to generate your addresses and sign your transactions within your browser, this means we <i>never</i> receive your private keys, this can be independently verified by reviewing the source code on <a href="https://github.com/OutCast3k/coinbin/" target="_blank">github</a>. You can even <a href="https://github.com/OutCast3k/coinbin/archive/master.zip">download</a> this page and host it yourself or run it offline!</p>
+					<p class="text-muted">This page uses javascript to generate your addresses and sign your transactions within your browser, this means we <i>never</i> receive your private keys, this can be independently verified by reviewing <a href=https://github.com/txid/coinbin/tree/txid_v2>the source code</a>.</p>
 					<br>
 
 				</div>
@@ -1433,7 +1412,7 @@
 
 		<div id="footer">
 			<div class="container text-right">
-	        		<p class="text-muted">Version 1.4</p>
+			<p class="text-muted"><b>txid.io</b> is a <a href=https://github.com/txid/coinbin/tree/txid_v2>fork of Coinb.in Wallet</a></p>
 			</div>
 		</div>
 
