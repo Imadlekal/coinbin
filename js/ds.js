@@ -5,6 +5,7 @@ $(document).ready(function() {
 	var txid_url = "https://txid.io/ds/";
 	var bitaps_url = "https://bitaps.com/";
 	var bitaps_api = "https://api.bitaps.com/btc/v1/blockchain/transaction/";
+	var blockcypher_url = "https://live.blockcypher.com/btc/tx/";
 
 
 	$('#doubleFee').val('0.001');		// default fee value
@@ -35,7 +36,7 @@ $(document).ready(function() {
 			},
 			success: function(data) {
 				if(data.fastestFee) {
-					var fee21co = data.fastestFee*txsize/100000000*2;  //  +100%
+					var fee21co = data.fastestFee*txsize/100000000*1.5;  //  +50%
 					$('#doubleFee').val(fee21co.toFixed(8));
 					$("#doubleAutoFeeStatus").addClass('hidden')
 					}
@@ -69,7 +70,7 @@ $(document).ready(function() {
 			var a1 = coinjs.wif2address(privkey)['address'];
 			var a2 = coinjs.segwitAddress(pubkey)['address'];
 			var a3 = coinjs.bech32Address(pubkey)['address'];
-			var htmlmsg = '<span class="glyphicon glyphicon-info-sign"></span> Doublespending one of following decoded addresses: <ul><li><a href='+bitaps_url+a1+' target=_blank rel=noreferrer>'+a1+'</a></li><li><a href='+bitaps_url+a2+' target=_blank rel=noreferrer>'+a2+'</a></li><li><a href='+bitaps_url+a3+' target=_blank rel=noreferrer>'+a3+'</a></li></ul>';
+			var htmlmsg = '<span class="glyphicon glyphicon-info-sign"></span> Double-spending one of following decoded addresses: <ul><li><a href='+bitaps_url+a1+' target=_blank rel=noreferrer>'+a1+'</a></li><li><a href='+bitaps_url+a2+' target=_blank rel=noreferrer>'+a2+'</a></li><li><a href='+bitaps_url+a3+' target=_blank rel=noreferrer>'+a3+'</a></li></ul>';
 			$("#doubleAddressFromPrivate").removeClass('hidden').removeClass('alert-danger').addClass('alert-info').html(htmlmsg);
 			$('#doubleSpendBtn').attr('disabled',false);
 		} catch (err) {
@@ -86,6 +87,7 @@ $(document).ready(function() {
 
 	$('#prevTxid').change(function() {
 		$("#checkTXConfirmedStatus").addClass('hidden')
+		$("#checkTXConfirmedStatusRBF").addClass('hidden')
 		$('#doubleTransactionCreate').addClass('hidden');
                 $('#doubleTransactionCreateStatus').addClass('hidden');
                 $('#doubleTransactionCreateStatus2').addClass('hidden');
@@ -94,14 +96,17 @@ $(document).ready(function() {
 		if (txidvalue !== '') {
 			isTXConfirmed(txidvalue)
 				.then(function(resp) {
-					if (resp == 0) {
-						$("#checkTXConfirmedStatus").removeClass('hidden').removeClass('alert-danger').addClass('alert-info').html('<span class="glyphicon glyphicon-info-sign"></span> Transaction still unconfirmed, Double-spending still possible!');
+					if (resp.isconfirmed == 0) {
+						$("#checkTXConfirmedStatus").removeClass('hidden').removeClass('alert-danger').addClass('alert-info').html('<span class="glyphicon glyphicon-info-sign"></span> Transaction still unconfirmed, Double-spending still possible !');
+						if (resp.rbf == 0) {
+							$("#checkTXConfirmedStatusRBF").removeClass('hidden').html('<span class="glyphicon glyphicon-warning-sign"></span> This is non-replaceable transaction (RBF flag not set). Double-spending will take more time, please be patient !<br>It is recommended to use Replace-By-Fee transactions if possible.');
+						}
 						$('#doubleSpendBtn').attr('disabled',false);
-					} else if (resp == 1) {
-						$("#checkTXConfirmedStatus").removeClass('hidden').removeClass('alert-info').addClass('alert-danger').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Transaction already confirmed! Can not doublespend it!');
+					} else if (resp.isconfirmed == 1) {
+						$("#checkTXConfirmedStatus").removeClass('hidden').removeClass('alert-info').addClass('alert-danger').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Transaction already confirmed ! Can not doublespend it !');
 						$('#doubleSpendBtn').attr('disabled',true);
 					} else {
-						$("#checkTXConfirmedStatus").removeClass('hidden').removeClass('alert-info').addClass('alert-danger').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Unexpected error, unable to check transaction status (not found in Blockchain?) or wrong TXID! Please doublecheck or try later!');
+						$("#checkTXConfirmedStatus").removeClass('hidden').removeClass('alert-info').addClass('alert-danger').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Unexpected error, unable to check transaction status (not found in Blockchain?) or wrong TXID ! Please doublecheck or try later !');
 						$('#doubleSpendBtn').attr('disabled',true);
 					}
 				})
@@ -148,7 +153,7 @@ $(document).ready(function() {
 					$('#doubleSpendBtn').attr('disabled',true);
 					throw '<b>Server Error:</b> ' + resp.error;
 				}
-				return resp.isconfirmed;
+				return resp;
 			})
 	}
 
@@ -277,7 +282,7 @@ $(document).ready(function() {
 				var tx = coinjs.transaction();
 				try {
 					// show spending address
-					var addrmsg = 'Address <a href='+bitaps_url+data.address+' target=_blank rel=noreferrer>'+data.address+'</a> has been selected for doublespending';
+					var addrmsg = 'Address <a href='+bitaps_url+data.address+' target=_blank rel=noreferrer>'+data.address+'</a> has been selected for double-spending';
 					showSuccessStatus(addrmsg);
 					// show warnings if any
 					if (data.warnmsg){
@@ -327,11 +332,13 @@ $(document).ready(function() {
 						$('#doubleBroadcastStatus p[role="doubleBroadcastResult"]').html(htmltxidresponse);
 
 						htmltxidresponse = 'Successfully broadcasted! Your transaction should will be available on BTC network soon!';
-						htmltxidresponse = htmltxidresponse + '<br><br>You may check it here using TXID: <a href='+bitaps_url+resp.doublespendtxid+' target=_blank rel=noreferrer>';
-						htmltxidresponse = htmltxidresponse + resp.doublespendtxid +'</a>';
-						htmltxidresponse = htmltxidresponse + '<br>or using New Output Address here: <a href='+bitaps_url+outaddr+' target=_blank rel=noreferrer>'+outaddr+'</a>';
-						htmltxidresponse = htmltxidresponse + '<br><br>This <b>may be not available immediately</b> at all known Block Explorers until some time or until Confirmed by Network.';
-						htmltxidresponse = htmltxidresponse + '<br><b>Please be patient! No need to send the same transaction again!</b>';
+						htmltxidresponse += '<br><br>You may check it here using TXID: <a href='+blockcypher_url+resp.doublespendtxid+' target=_blank rel=noreferrer>';
+						htmltxidresponse += resp.doublespendtxid +'</a> (BlockCypher)';
+						htmltxidresponse += '<br>or here <a href='+bitaps_url+resp.doublespendtxid+' target=_blank rel=noreferrer>';
+						htmltxidresponse += resp.doublespendtxid +'</a> (Bitaps)';
+						htmltxidresponse += '<br>or using New Output Address here: <a href='+bitaps_url+outaddr+' target=_blank rel=noreferrer>'+outaddr+'</a>';
+						htmltxidresponse += '<br><br>This <b>may be not available immediately</b> at all known Block Explorers until some time or until Confirmed by Network.';
+						htmltxidresponse += '<br><b>Please be patient! No need to send the same transaction again!</b>';
 
 						$('#doubleBroadcastStatus2').removeClass('hidden').removeClass('alert-danger').addClass('alert-info');
 						$('#doubleBroadcastStatus2 p[role="doubleBroadcastResult2"]').html(htmltxidresponse);

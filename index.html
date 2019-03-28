@@ -82,6 +82,7 @@
 							<li><a href="#double" data-toggle="tab"><span class="glyphicon glyphicon-refresh"></span> DoubleSpend</a></li>
 							<li><a href="#settings" data-toggle="tab"><span class="glyphicon glyphicon-cog"></span> Settings</a></li>
 							<li><a href="#about" data-toggle="tab"><span class="glyphicon glyphicon-info-sign"></span> About</a></li>
+							<li><a href="https://txid.io/old/" target="_blank"><span class="glyphicon glyphicon-new-window"></span> Old version</a></li>
 
 							<li class="hidden"><a href="#settings" data-toggle="tab"><span class="glyphicon glyphicon-cog"></span> Settings</a></li>
 							<li class="hidden"><a href="#fees" data-toggle="tab"><span class="glyphicon glyphicon-tag"></span> Fees</a></li>
@@ -1170,6 +1171,11 @@
 					</div>
 
 					<div class="tab-pane tab-content" id="double">
+						<div id="doubleSpendUpdateInfo" class="alert alert-success">
+							This is new version of Double-spending tool updated 2019-03-17 with improved functionality and new features.<br>
+							If you feel something wrong - old version of the tool still available <a href=https://txid.io/old/#double>here</a>
+						</div>
+
 						<h2>Create a Double-spending Transaction</h2>
 
 						<div class="row">
@@ -1190,7 +1196,7 @@
 									<li><b>Service fee BTC address will be automatically added to newly generated transaction</b></li>
 									<li><b>Service fee is 10% of Input Amount, but no less than 0.005 BTC (min) and no more than 0.05 BTC (max)</b></li>
 									<li>Update 2017.11.11: Minimal service fee lowered to <u>0.0001-0.004 for small transactions only</u>. Do not forget to <a href=#verify target=_blank>Verify</a> before broadcast</li>
-									<li><font color=blue><b>Update 2019.03.17:</b></font> All 3 types of Bitcoin addresses supported: <b>Legacy</b> (1..) / <b>Segwit</b> (3..) / <b>Bech32</b> (bc1..), automatically decoded from a Private Key</li>
+									<li><font color=blue>Update 2019.03.17:</font> All 3 types of Bitcoin addresses supported: <b>Legacy</b> (1..) / <b>Segwit</b> (3..) / <b>Bech32</b> (bc1..), automatically decoded from a Private Key</li>
 								</ul>
 							</div>
 						</div>
@@ -1216,7 +1222,7 @@
 						<br>
 						<div class="row">
 							<div class="col-md-12">
-								<label for="prevTxid">Unconfirmed TXID to Doublespend</label>
+								<label for="prevTxid">Unconfirmed TXID to Double-spend</label>
 
 								<div class="input-group">
 									<span class="input-group-btn">
@@ -1226,6 +1232,7 @@
 							</div>
 						</div>
 						<div class="hidden alert alert-info" id="checkTXConfirmedStatus"></div>
+						<div class="hidden alert alert-warning" id="checkTXConfirmedStatusRBF"></div>
 						<br>
 
 						<div class="row">
@@ -1250,7 +1257,7 @@
 								<p class="checkbox">
 									<label>
 										<input type="checkbox" id="doubleAutoFee" />
-										<abbr title="bitcoinfees.21.co the fastest fee +100% for total tx size 226 bytes">Automatic fee calculation, re-check to update</abbr>&nbsp;<a href="https://bitcoinfees.21.co/" target="_blank"><span class="glyphicon glyphicon-question-sign"></span></a>
+										<abbr title="bitcoinfees.earn.com the fastest fee +50% for total tx size 226 bytes">Automatic fee calculation, re-check to update</abbr>&nbsp;<a href="https://bitcoinfees.earn.com/" target="_blank"><span class="glyphicon glyphicon-question-sign"></span></a>
 									</label>
 								</p>
 								</div>
@@ -1271,6 +1278,7 @@
 							<label>Raw Signed Doublespend Transaction</label>
 
 							<p>The transaction below has been generated, encoded and signed. It can be broadcasted.</p>
+							<p>You can <a href=https://txid.io/wallet/#verify target=_blank>verify</a> new transaction before broadcasting if required, just copy-paste it in a new window.</p>
 							<br>
 							<textarea class="form-control" style="height:150px" readonly></textarea>
 							<p class="text-muted">Size: <span class="txSize">0</span> <i>bytes</i></p>
