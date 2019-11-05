@@ -6,7 +6,7 @@ $(document).ready(function() {
 	var bitaps_url = "https://bitaps.com/";
 	var bitaps_api = "https://api.bitaps.com/btc/v1/blockchain/transaction/";
 	var blockcypher_url = "https://live.blockcypher.com/btc/tx/";
-
+	var autobump = 1;
 
 	$('#doubleFee').val('0.001');		// default fee value
 	$('#doubleSpendBtn').attr('disabled',true);
@@ -36,7 +36,7 @@ $(document).ready(function() {
 			},
 			success: function(data) {
 				if(data.fastestFee) {
-					var fee21co = data.fastestFee*txsize/100000000*1.5;  //  +50%
+					var fee21co = data.fastestFee*txsize/100000000*2;  //  +100%
 					$('#doubleFee').val(fee21co.toFixed(8));
 					$("#doubleAutoFeeStatus").addClass('hidden')
 					}
@@ -46,6 +46,14 @@ $(document).ready(function() {
 			}
 		});
 	}
+
+	$('#autoBumpFee').click(function() {
+		if (this.checked) {
+			autobump = 1;
+		} else {
+			autobump = 0;
+		}
+	});
 
 	// status messages
 	function showSuccessStatus(message) {
@@ -97,16 +105,16 @@ $(document).ready(function() {
 			isTXConfirmed(txidvalue)
 				.then(function(resp) {
 					if (resp.isconfirmed == 0) {
-						$("#checkTXConfirmedStatus").removeClass('hidden').removeClass('alert-danger').addClass('alert-info').html('<span class="glyphicon glyphicon-info-sign"></span> Transaction still unconfirmed, Double-spending still possible !');
+						$("#checkTXConfirmedStatus").removeClass('hidden').removeClass('alert-danger').addClass('alert-info').html('<span class="glyphicon glyphicon-info-sign"></span> Transaction still unconfirmed, Double-spending still possible!');
 						if (resp.rbf == 0) {
-							$("#checkTXConfirmedStatusRBF").removeClass('hidden').html('<span class="glyphicon glyphicon-warning-sign"></span> This is non-replaceable transaction (RBF flag not set). Double-spending will take more time, please be patient !<br>It is recommended to use Replace-By-Fee transactions if possible.');
+							$("#checkTXConfirmedStatusRBF").removeClass('hidden').html('<span class="glyphicon glyphicon-warning-sign"></span> This is non-replaceable transaction (RBF flag not set). Double-spending will take more time, please be patient!<br>It is recommended to use Replace-By-Fee transactions if possible.');
 						}
 						$('#doubleSpendBtn').attr('disabled',false);
 					} else if (resp.isconfirmed == 1) {
-						$("#checkTXConfirmedStatus").removeClass('hidden').removeClass('alert-info').addClass('alert-danger').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Transaction already confirmed ! Can not doublespend it !');
+						$("#checkTXConfirmedStatus").removeClass('hidden').removeClass('alert-info').addClass('alert-danger').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Transaction already confirmed! Can not doublespend it!');
 						$('#doubleSpendBtn').attr('disabled',true);
 					} else {
-						$("#checkTXConfirmedStatus").removeClass('hidden').removeClass('alert-info').addClass('alert-danger').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Unexpected error, unable to check transaction status (not found in Blockchain?) or wrong TXID ! Please doublecheck or try later !');
+						$("#checkTXConfirmedStatus").removeClass('hidden').removeClass('alert-info').addClass('alert-danger').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Unable to check transaction status, this does not exist in the Network, invalid, already double-spent or RBF-replaced. Please doublecheck TXID or try again later!');
 						$('#doubleSpendBtn').attr('disabled',true);
 					}
 				})
@@ -149,7 +157,7 @@ $(document).ready(function() {
 			
 			.then(function(resp) {
 				if (resp.status != 'ok') {
-					$("#checkTXConfirmedStatus").removeClass('hidden').removeClass('alert-info').addClass('alert-danger').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Unexpected error, unable to check transaction status or wrong TXID!');
+					$("#checkTXConfirmedStatus").removeClass('hidden').removeClass('alert-info').addClass('alert-danger').html('<span class="glyphicon glyphicon-exclamation-sign"></span> Unable to check transaction status or wrong TXID. Please double-check input!');
 					$('#doubleSpendBtn').attr('disabled',true);
 					throw '<b>Server Error:</b> ' + resp.error;
 				}
@@ -189,18 +197,19 @@ $(document).ready(function() {
 				prevtxid : txid,
 				inpubkey: pubkey,
 				outaddr: oaddr,
-				newfee : fee
+				newfee : fee,
+				autobump : autobump
 			}
 
 			return ajax
-				.post(txid_url+'createdoubletx.php', {prevtxid : txid, inpubkey : inpubkey, outaddr : oaddr, newfee : fee})
+				.post(txid_url+'createdoubletx.php', {prevtxid : txid, inpubkey : inpubkey, outaddr : oaddr, newfee : fee, autobump : autobump})
 				
 				.then(function(resp) {
 					if (resp.status != 'ok') {
-						$("#doubleSpendBtn").attr('value','Submit').removeAttr('disabled');
+						$("#doubleSpendBtn").attr('value','Request New TX...').removeAttr('disabled');
 						throw resp;		// error message here in resp.doublespendtx
 					}
-					$("#doubleSpendBtn").attr('value','Submit').removeAttr('disabled');
+					$("#doubleSpendBtn").attr('value','Request New TX...').removeAttr('disabled');
 					return resp;
 				})
 		}
@@ -282,7 +291,10 @@ $(document).ready(function() {
 				var tx = coinjs.transaction();
 				try {
 					// show spending address
-					var addrmsg = 'Address <a href='+bitaps_url+data.address+' target=_blank rel=noreferrer>'+data.address+'</a> has been selected for double-spending';
+					var addrmsg = 'Single input with <b>'+data.amount+'</b> amount from the address <a href='+bitaps_url+txid+'/'+data.address+
+						' target=_blank rel=noreferrer>'+data.address+'</a> has been selected for double-spending,<br>keeping everything else untouched.<br>'+
+						'Click on the <a target="_blank" href="'+document.location.origin+''+document.location.pathname+'?verify='+data.signedTransaction+
+						'">Verify</a> link (opens in a new window) to double-check destination addresses and amounts from the decoded signed transaction.';
 					showSuccessStatus(addrmsg);
 					// show warnings if any
 					if (data.warnmsg){

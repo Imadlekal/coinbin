@@ -60,10 +60,10 @@
 							<span class="icon-bar"></span>
 							<span class="icon-bar"></span>
 						</button>
-						<a href="#home" class="navbar-brand" id="homeBtn"><img src="images/txidlogo.gif" style="height:25px;margin-top:-5px"></a>
 					</div>
 					<div class="collapse navbar-collapse">
 						<ul class="nav navbar-nav">
+							<li><a href="#home" data-toggle="tab"><span class="glyphicon glyphicon-home"></span> Home</a></li>
 							<li class="dropdown">
 								<a href="#" class="dropdown-toggle" data-toggle="dropdown"><span class="glyphicon glyphicon-plus"></span> New<b class="caret"></b></a>
 								<ul class="dropdown-menu">
@@ -104,13 +104,10 @@
 						</div>
 
 						<div class="jumbotron">
-							<h2>Bitcoin. It's your money!</h2>
-							<p>Be your own bank, take control of your own money and start using Bitcoin today!</p>
-							<br>
 							<h2><font color=#144491><b>txid.io</b> updated!</font></h3><h3>Added full support of Legacy, Segwit and Bech32 addresses!</h2>
-							<p><a class="btn btn-primary btn-lg" href="#newTransaction" role="button">Create a new transaction &raquo;</a></p>
+							<p><a class="btn btn-primary" href="#newTransaction" role="button">Create a new transaction &raquo;</a></p>
 							<h3>Double-spending tool supports Segwit and Bech32 as well</h3>
-							<p><a class="btn btn-primary btn-lg" href="#double" role="button">DoubleSpend &raquo;</a></p>
+							<p><a class="btn btn-success" href="#double" role="button">Create a double-spending transaction &raquo;</a></p>
 						</div>
 
 						<hr>
@@ -1171,13 +1168,7 @@
 					</div>
 
 					<div class="tab-pane tab-content" id="double">
-						<div id="doubleSpendUpdateInfo" class="alert alert-success">
-							This is new version of Double-spending tool updated 2019-03-17 with improved functionality and new features.<br>
-							If you feel something wrong - old version of the tool still available <a href=https://txid.io/old/#double>here</a>
-						</div>
-
 						<h2>Create a Double-spending Transaction</h2>
-
 						<div class="row">
 							<div class="col-md-12">
 								<label for="doubleServiceRules">Service Rules</label>
@@ -1185,18 +1176,18 @@
 									<li>Unsigned double-spending transaction will generated at server side and returned back</li>
 									<li>Private Key will be <b><u>never</u></b> sent out from your computer, new transaction will be signed <b><u>in your browser</u></b>! (Open Source code)</li>
 									<li>You need to specify Private Key of any your Address from the previous still unconfirmed transaction, only this Input will be double-spent</li>
-									<li>If more than one Input with the same Address in the unconfirmed transaction - Input with the highest amount will be double-spent</li>
-									<li>All other Inputs (if any) will be recovered in your wallet when new double-spending transaction confirmed by network</li>
+									<li>If more than one Input with the same Address in the unconfirmed transaction - Input with the highest amount will be selected and double-spent</li>
+									<li>All other Inputs (if any) will become available again in your wallet after new double-spending transaction confirmed by network</li>
 									<li>You may doublespend each Input (if multiple Inputs) as new transaction or doublespend just any one Input Address</li>
-									<li>New transaction will be broadcasted to the BTC network (repeatedly until confirmed) via our own specially configured nodes (no <i>258: txn-mempool-conflict</i> error)</li>
-									<li>Double-spending time can not be estimated but usually this is less than 24 hours</li>
-									<li>You will be able to verify New Transaction and check all Outputs and Amounts <b>before</b> Broadcast at <a href=#verify target=_blank>Verify Tab</a> (copy-paste it)</li>
+									<li>New transaction will be broadcasted to the BTC network via our own specially configured nodes (no <i>txn-mempool-conflict</i> error)</li>
+									<li>Double-spending time can not be estimated but usually this is less than 24 hours, sometimes much faster</li>
+									<li>You will be able to verify New Transaction and check all Outputs and Amounts <b>before</b> Broadcast at <a href=#verify target=_blank>Verify Tab</a></li>
 									<li>Bitcoin (BTC) is only supported for double-spending, no Bitcoin Cash, Gold or other bitcoin forks</li>
 									<li><b>This is not free-of-charge service. No refund under any circumstances.</b></li>
 									<li><b>Service fee BTC address will be automatically added to newly generated transaction</b></li>
 									<li><b>Service fee is 10% of Input Amount, but no less than 0.005 BTC (min) and no more than 0.05 BTC (max)</b></li>
 									<li>Update 2017.11.11: Minimal service fee lowered to <u>0.0001-0.004 for small transactions only</u>. Do not forget to <a href=#verify target=_blank>Verify</a> before broadcast</li>
-									<li><font color=blue>Update 2019.03.17:</font> All 3 types of Bitcoin addresses supported: <b>Legacy</b> (1..) / <b>Segwit</b> (3..) / <b>Bech32</b> (bc1..), automatically decoded from a Private Key</li>
+									<li>Update 2019.03.17: All types of Bitcoin addresses supported: <b>Legacy</b> (1..) / <b>Segwit</b> (3..) / <b>Bech32</b> (bc1..), automatically decoded from a Private Key</li>
 								</ul>
 							</div>
 						</div>
@@ -1207,11 +1198,11 @@
 						<div class="row">
 								<p>
 							<div class="col-md-12">
-								<label for="doublePrivateKey">Private Key (WIF format)</label>, string starting <b>K</b>, <b>L</b> or <b>5</b> character, 51-52 symbols length
+								<label for="doublePrivateKey">Private Key (WIF format)</label>
 								<p>(will be used only <u>locally within your browser</u>, service will <u>never send it out</u> from your PC)</p>
 
 								<div class="input-group">
-									<input id="doublePrivateKey" type="password" class="form-control" value="">
+									<input id="doublePrivateKey" type="password" class="form-control" placeholder="string starting K, L or 5 character, 51-52 symbols length" value="">
 									<span class="input-group-btn">
 										<button class="showKey btn btn-default" type="button">Show</button>
 									</span>
@@ -1226,7 +1217,7 @@
 
 								<div class="input-group">
 									<span class="input-group-btn">
-										<input id="prevTxid" type="text" class="form-control" value="">
+										<input id="prevTxid" type="text" class="form-control" placeholder="string of hexadecimal numbers [0-9] and [a-f], 64 symbols length" value="">
 									</span>
 								</div>
 							</div>
@@ -1241,7 +1232,7 @@
 
 								<div class="input-group">
 									<span class="input-group-btn">
-										<input id="outAddr" type="text" class="form-control" value="">
+										<input id="outAddr" type="text" class="form-control" placeholder="BTC address in any format (legacy, segwit, bech32)" value="">
 									</span>
 								</div>
 							</div>
@@ -1257,7 +1248,13 @@
 								<p class="checkbox">
 									<label>
 										<input type="checkbox" id="doubleAutoFee" />
-										<abbr title="bitcoinfees.earn.com the fastest fee +50% for total tx size 226 bytes">Automatic fee calculation, re-check to update</abbr>&nbsp;<a href="https://bitcoinfees.earn.com/" target="_blank"><span class="glyphicon glyphicon-question-sign"></span></a>
+										<abbr title="bitcoinfees.earn.com the fastest fee +100% for total tx size 226 bytes">Automatic fee calculation, re-check to update</abbr>&nbsp;<a href="https://bitcoinfees.earn.com/" target="_blank"><span class="glyphicon glyphicon-question-sign"></span></a>
+									</label>
+								</p>
+								<p class="checkbox">
+									<label>
+										<input type="checkbox" id="autoBumpFee" checked/>
+										<abbr title="Auto-bump New Network Fee if required after Unconfirmed TX analysis">Auto-bump New Network Fee if required</abbr>
 									</label>
 								</p>
 								</div>
@@ -1268,7 +1265,7 @@
 						<p>Submitting button below you will request new double-spending transaction.<br>
 						 It will not be broadcasted to the Network without <u><b>your approval at the next step!</b></u></p>
 
-						<input type="button" value="Submit" class="btn btn-primary" id="doubleSpendBtn">
+						<input type="button" value="Request New TX..." class="btn btn-primary" id="doubleSpendBtn">
 						<br><br>
 
 						<div id="doubleTransactionCreateStatus" class="alert alert-danger hidden"></div>
@@ -1277,8 +1274,7 @@
 						<div id="doubleTransactionCreate" class="alert alert-success hidden">
 							<label>Raw Signed Doublespend Transaction</label>
 
-							<p>The transaction below has been generated, encoded and signed. It can be broadcasted.</p>
-							<p>You can <a href=https://txid.io/wallet/#verify target=_blank>verify</a> new transaction before broadcasting if required, just copy-paste it in a new window.</p>
+							<p>The transaction below has been generated, encoded and signed. It is ready for broadcast to the network.</p>
 							<br>
 							<textarea class="form-control" style="height:150px" readonly></textarea>
 							<p class="text-muted">Size: <span class="txSize">0</span> <i>bytes</i></p>
